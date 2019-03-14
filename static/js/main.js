@@ -1,5 +1,5 @@
 /*
-	Big Picture by HTML5 UP
+	Hyperspace by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
@@ -7,230 +7,203 @@
 (function($) {
 
 	skel.breakpoints({
-		xxlarge: '(max-width: 1920px)',
-		xlarge: '(max-width: 1680px)',
-		large: '(max-width: 1280px)',
-		medium: '(max-width: 1000px)',
-		small: '(max-width: 736px)',
-		xsmall: '(max-width: 480px)',
+		xlarge:	'(max-width: 1680px)',
+		large:	'(max-width: 1280px)',
+		medium:	'(max-width: 980px)',
+		small:	'(max-width: 736px)',
+		xsmall:	'(max-width: 480px)'
 	});
 
 	$(function() {
 
 		var	$window = $(window),
 			$body = $('body'),
-			$header = $('#header'),
-			$all = $body.add($header);
+			$sidebar = $('#sidebar');
+
+		// Hack: Enable IE flexbox workarounds.
+			if (skel.vars.IEVersion < 12)
+				$body.addClass('is-ie');
 
 		// Disable animations/transitions until the page has loaded.
-			$body.addClass('is-loading');
+			if (skel.canUse('transition'))
+				$body.addClass('is-loading');
 
 			$window.on('load', function() {
 				window.setTimeout(function() {
 					$body.removeClass('is-loading');
-				}, 0);
+				}, 100);
 			});
 
-		// Touch mode.
-			skel.on('change', function() {
+		// Forms.
 
-				if (skel.vars.mobile || skel.breakpoint('small').active)
-					$body.addClass('is-touch');
-				else
-					$body.removeClass('is-touch');
+			// Fix: Placeholder polyfill.
+				$('form').placeholder();
 
-			});
+			// Hack: Activate non-input submits.
+				$('form').on('click', '.submit', function(event) {
 
-		// Fix: Placeholder polyfill.
-			$('form').placeholder();
+					// Stop propagation, default.
+						event.stopPropagation();
+						event.preventDefault();
 
-		// Fix: IE flexbox fix.
-			if (skel.vars.IEVersion <= 11
-			&&	skel.vars.IEVersion >= 10) {
+					// Submit form.
+						$(this).parents('form').submit();
 
-				var $main = $('.main.fullscreen'),
-					IEResizeTimeout;
+				});
 
-				$window
-					.on('resize.ie-flexbox-fix', function() {
-
-						clearTimeout(IEResizeTimeout);
-
-						IEResizeTimeout = setTimeout(function() {
-
-							var wh = $window.height();
-
-							$main.each(function() {
-
-								var $this = $(this);
-
-								$this.css('height', '');
-
-								if ($this.height() <= wh)
-									$this.css('height', (wh - 50) + 'px');
-
-							});
-
-						});
-
-					})
-					.triggerHandler('resize.ie-flexbox-fix');
-
-			}
-
-		// Prioritize "important" elements on small.
-			skel.on('+small -small', function() {
+		// Prioritize "important" elements on medium.
+			skel.on('+medium -medium', function() {
 				$.prioritize(
-					'.important\\28 small\\29',
-					skel.breakpoint('small').active
+					'.important\\28 medium\\29',
+					skel.breakpoint('medium').active
 				);
 			});
 
-		// Gallery.
-			$window.on('load', function() {
+		// Sidebar.
+			if ($sidebar.length > 0) {
 
-				var $gallery = $('.gallery');
+				var $sidebar_a = $sidebar.find('a');
 
-				$gallery.poptrox({
-					baseZIndex: 10001,
-					useBodyOverflow: false,
-					usePopupEasyClose: false,
-					overlayColor: '#1f2328',
-					overlayOpacity: 0.65,
-					usePopupDefaultStyling: false,
-					usePopupCaption: true,
-					popupLoaderText: '',
-					windowMargin: 50,
-					usePopupNav: true
-				});
+				$sidebar_a
+					.addClass('scrolly')
+					.on('click', function() {
 
-				// Hack: Adjust margins when 'small' activates.
-					skel
-						.on('-small', function() {
-							$gallery.each(function() {
-								$(this)[0]._poptrox.windowMargin = 50;
-							});
-						})
-						.on('+small', function() {
-							$gallery.each(function() {
-								$(this)[0]._poptrox.windowMargin = 5;
-							});
-						});
+						var $this = $(this);
 
-			});
+						// External link? Bail.
+							if ($this.attr('href').charAt(0) != '#')
+								return;
 
-		// Section transitions.
-			if (skel.canUse('transition')) {
+						// Deactivate all links.
+							$sidebar_a.removeClass('active');
 
-				var on = function() {
+						// Activate link *and* lock it (so Scrollex doesn't try to activate other links as we're scrolling to this one's section).
+							$this
+								.addClass('active')
+								.addClass('active-locked');
 
-					// Galleries.
-						$('.gallery')
-							.scrollex({
-								top:		'30vh',
-								bottom:		'30vh',
-								delay:		50,
-								initialize:	function() { $(this).addClass('inactive'); },
-								terminate:	function() { $(this).removeClass('inactive'); },
-								enter:		function() { $(this).removeClass('inactive'); },
-								leave:		function() { $(this).addClass('inactive'); }
-							});
+					})
+					.each(function() {
 
-					// Generic sections.
-						$('.main.style1')
-							.scrollex({
-								mode:		'middle',
-								delay:		100,
-								initialize:	function() { $(this).addClass('inactive'); },
-								terminate:	function() { $(this).removeClass('inactive'); },
-								enter:		function() { $(this).removeClass('inactive'); },
-								leave:		function() { $(this).addClass('inactive'); }
-							});
+						var	$this = $(this),
+							id = $this.attr('href'),
+							$section = $(id);
 
-						$('.main.style2')
-							.scrollex({
-								mode:		'middle',
-								delay:		100,
-								initialize:	function() { $(this).addClass('inactive'); },
-								terminate:	function() { $(this).removeClass('inactive'); },
-								enter:		function() { $(this).removeClass('inactive'); },
-								leave:		function() { $(this).addClass('inactive'); }
+						// No section for this link? Bail.
+							if ($section.length < 1)
+								return;
+
+						// Scrollex.
+							$section.scrollex({
+								mode: 'middle',
+								top: '-20vh',
+								bottom: '-20vh',
+								initialize: function() {
+
+									// Deactivate section.
+										if (skel.canUse('transition'))
+											$section.addClass('inactive');
+
+								},
+								enter: function() {
+
+									// Activate section.
+										$section.removeClass('inactive');
+
+									// No locked links? Deactivate all links and activate this section's one.
+										if ($sidebar_a.filter('.active-locked').length == 0) {
+
+											$sidebar_a.removeClass('active');
+											$this.addClass('active');
+
+										}
+
+									// Otherwise, if this section's link is the one that's locked, unlock it.
+										else if ($this.hasClass('active-locked'))
+											$this.removeClass('active-locked');
+
+								}
 							});
 
-					// Contact.
-						$('#contact')
-							.scrollex({
-								top:		'50%',
-								delay:		50,
-								initialize:	function() { $(this).addClass('inactive'); },
-								terminate:	function() { $(this).removeClass('inactive'); },
-								enter:		function() { $(this).removeClass('inactive'); },
-								leave:		function() { $(this).addClass('inactive'); }
-							});
-
-				};
-
-				var off = function() {
-
-					// Galleries.
-						$('.gallery')
-							.unscrollex();
-
-					// Generic sections.
-						$('.main.style1')
-							.unscrollex();
-
-						$('.main.style2')
-							.unscrollex();
-
-					// Contact.
-						$('#contact')
-							.unscrollex();
-
-				};
-
-				skel.on('change', function() {
-
-					if (skel.breakpoint('small').active)
-						(off)();
-					else
-						(on)();
-
-				});
+					});
 
 			}
 
-		// Events.
-			var resizeTimeout, resizeScrollTimeout;
+		// Scrolly.
+			$('.scrolly').scrolly({
+				speed: 1000,
+				offset: function() {
 
-			$window
-				.resize(function() {
+					// If <=large, >small, and sidebar is present, use its height as the offset.
+						if (skel.breakpoint('large').active
+						&&	!skel.breakpoint('small').active
+						&&	$sidebar.length > 0)
+							return $sidebar.height();
 
-					// Disable animations/transitions.
-						$body.addClass('is-resizing');
+					return 0;
 
-					window.clearTimeout(resizeTimeout);
+				}
+			});
 
-					resizeTimeout = window.setTimeout(function() {
+		// Spotlights.
+			$('.spotlights > section')
+				.scrollex({
+					mode: 'middle',
+					top: '-10vh',
+					bottom: '-10vh',
+					initialize: function() {
 
-						// Update scrolly links.
-							$('a[href^="#"]').scrolly({
-								speed: 1500,
-								offset: $header.outerHeight() - 1
-							});
+						// Deactivate section.
+							if (skel.canUse('transition'))
+								$(this).addClass('inactive');
 
-						// Re-enable animations/transitions.
-							window.setTimeout(function() {
-								$body.removeClass('is-resizing');
-								$window.trigger('scroll');
-							}, 0);
+					},
+					enter: function() {
 
-					}, 100);
+						// Activate section.
+							$(this).removeClass('inactive');
 
+					}
 				})
-				.load(function() {
-					$window.trigger('resize');
+				.each(function() {
+
+					var	$this = $(this),
+						$image = $this.find('.image'),
+						$img = $image.find('img'),
+						x;
+
+					// Assign image.
+						$image.css('background-image', 'url(' + $img.attr('src') + ')');
+
+					// Set background position.
+						if (x = $img.data('position'))
+							$image.css('background-position', x);
+
+					// Hide <img>.
+						$img.hide();
+
 				});
+
+		// Features.
+			if (skel.canUse('transition'))
+				$('.features')
+					.scrollex({
+						mode: 'middle',
+						top: '-20vh',
+						bottom: '-20vh',
+						initialize: function() {
+
+							// Deactivate section.
+								$(this).addClass('inactive');
+
+						},
+						enter: function() {
+
+							// Activate section.
+								$(this).removeClass('inactive');
+
+						}
+					});
 
 	});
 
